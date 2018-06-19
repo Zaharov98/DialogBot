@@ -1,0 +1,7 @@
+__pycache__/
+.idea/
+.pytest_cache/
+venv/
+
+# secret info
+config.json
