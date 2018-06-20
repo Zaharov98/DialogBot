@@ -1,12 +1,30 @@
 """ Message handler class """
 
-import requests
 import logging as log
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 
-log.basicConfig(level=log.DEBUG, format=" %(asctime)s - %(levelname)s - %(message)s")
+log.basicConfig(level=log.INFO, format=" %(asctime)s - %(levelname)s - %(message)s")
 # log.disable(log.INFO)
+
+
+class Message:
+    """ Data class"""
+    def __init__(self, user_id, text, event_type):
+        self.user_id = user_id
+        self.text = text
+        self.event_type = event_type
+
+    @property
+    def message(self):
+        return self.__text__
+
+    @message.setter
+    def message(self, message):
+        if message is not None and len(message) > 0:
+            self.__text__ = message
+        else:
+            self.__text__ = 'None'
 
 
 class VkChat:
@@ -32,25 +50,18 @@ class VkChat:
         """ Block thread and start polling """
         longpoll = VkLongPoll(self._session)
         for event in longpoll.listen():
-            self._handle_vk_event(event)
+            if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
+                log.info('Received from id: {}: "{}"'.format(event.user_id, event.text))
+                yield Message(event.user_id, event.text, event.type)
 
-    def _handle_vk_event(self, event):
-        """ handle selected types of events """
-        if event.type == VkEventType.MESSAGE_NEW and event.to_me and event.text:
-            log.info('Received from id: {}: "{}"'.format(event.user_id, event.text))
-            response_text = 'ECHO'
+            elif event.type == VkEventType.USER_ONLINE and event.from_chat:
+                log.info('User in online id: {}'.format(event.user_id))
+                yield Message(event.user_id, None, event.type)
 
-            self._chat.messages.send(
-                user_id=event.user_id,
-                message=response_text
-            )
-        elif event.type == VkEventType.USER_ONLINE:
-            log.info('User in online id: {}'.format(event.user_id))
-            response_text = 'HELLO'
+            log.debug('Event {}'.format(event.type))
 
-            self._chat.messages.send(
-                user_id=event.user_id,
-                message=response_text
-            )
-
-        log.debug('Event {}'.format(event.type))
+    def send_message(self, user_id, text):
+        self._chat.messages.send(
+            user_id=user_id,
+            message=text
+        )
