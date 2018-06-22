@@ -60,7 +60,7 @@ class VkChat:
 
             log.debug('Event {}'.format(event.type))
 
-    def send_message(self, user_id, text):
+    def send_text(self, user_id, text):
         self._chat.messages.send(
             user_id=user_id,
             message=text
